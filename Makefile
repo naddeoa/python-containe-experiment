@@ -4,7 +4,11 @@
 default:help
 
 server: ## Run the dev server
-	uvicorn src.ai.whylabs.container.main:app --reload
+	# uvicorn src.ai.whylabs.container.main:app --reload
+	cd src && python -m ai.whylabs.container.startup
+
+benchmark:
+	hey -z 10s -n 1000 -c 4 -m POST -D data/short-data.csv -T 'application/json' 'http://localhost:8000/mp'
 
 requirements: requirements.txt
 
