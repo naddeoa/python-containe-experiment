@@ -1,30 +1,55 @@
 import concurrent.futures as cf
+import typing
+from time import perf_counter
 import multiprocessing as mp
+from multiprocessing.connection import Connection
 from time import perf_counter
 from random import randint
+from whylogs.core import DatasetProfile
+import pandas as pd
+import io
 
-profiling_queue: mp.Queue = mp.Queue()
+
+queue: mp.Queue = mp.Queue(100)
+pipe_rcv, pipe_send = mp.Pipe(False)
 
 
-# do stuff on the cpu for a second
-def _profile_cpu() -> int:
+def _fake_work() -> int:
     i = 0
     start = perf_counter()
 
-    while (perf_counter() - start) < 1:
+    # simulate some profiling
+    while (perf_counter() - start) < 0.02:
         i = i + randint(0, 1_000_000)
 
     return i
 
 
-def profile_mp(queue: mp.Queue) -> None:
-    i = 0
-    log = open("/tmp/log.txt", "w")
-    log.write("start\n")
+def profile_queue(queue: mp.Queue, name: str) -> None:
+    profile = DatasetProfile()
 
+    handled = 0
     while True:
-        item: int = queue.get()
-        i = i + item
-        _profile_cpu()
-        log.write(f'{i}\n')
-        log.flush()
+        start = perf_counter()
+        csv_bytes: bytes = queue.get()
+        df = pd.read_csv(io.BytesIO(csv_bytes))
+        # profile.track(df)
+        end = perf_counter()
+        handled = handled + 1
+        _fake_work()
+        print(f"[QUEUE {name}] done with {handled} of size {len(df)} in {end-start}s")
+
+
+def profile_pipe(conn: Connection, name: str) -> None:
+    profile = DatasetProfile()
+
+    handled = 0
+    # while True:
+    #     start = perf_counter()
+    #     csv_bytes: bytes = conn.recv()
+    #     df = pd.read_csv(io.BytesIO(csv_bytes))
+    #     # profile.track(df)
+    #     end = perf_counter()
+    #     handled = handled + 1
+    #     _fake_work()
+    #     print(f"[PIPE {name}] done with {handled} of size {len(df)} in {end-start}s")

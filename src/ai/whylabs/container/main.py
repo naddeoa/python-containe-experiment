@@ -1,12 +1,14 @@
 from fastapi import FastAPI
+import typing
+import asyncio
 from typing import Dict
-import time
 from random import random, randint
 from time import perf_counter
 import concurrent.futures as cf
 import multiprocessing as mp
+from fastapi import FastAPI, Request
 
-from .profiling import profiling_queue
+from .profiling import pipe_send, queue
 
 app = FastAPI()
 
@@ -30,8 +32,20 @@ async def root() -> Dict[str, str]:
     return {"message": "Hello World", "result": str(future.result())}
 
 
-@app.post("/mp")
-async def mp_endpoint() -> Dict[str, str]:
-    i = randint(0, 1_000_000)
-    profiling_queue.put(i)
-    return {"status": "async"}
+@app.post("/queue")
+async def test_queue(request: Request) -> None:
+    csv: bytes = await request.body()
+    print(f"[CONTROLLER] Sending bytes over to profiling process {str(type(csv))}")
+    queue.put(csv)
+
+
+async def async_send(conn: typing.Any, payload: typing.Any) -> None:
+    conn.send(payload)
+
+
+@app.post("/pipe")
+async def test_pipe(request: Request) -> None:
+    csv: bytes = await request.body()
+    print(f"[CONTROLLER] Sending bytes over to profiling process {str(type(csv))}")
+    pipe_send.send(csv)
+    # asyncio.get_running_loop().create_task(async_send(pipe[0], csv))
