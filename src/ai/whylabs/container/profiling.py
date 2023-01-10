@@ -33,10 +33,10 @@ def profile_queue(queue: mp.Queue, name: str) -> None:
         start = perf_counter()
         csv_bytes: bytes = queue.get()
         df = pd.read_csv(io.BytesIO(csv_bytes))
-        # profile.track(df)
+        profile.track(df)
         end = perf_counter()
         handled = handled + 1
-        _fake_work()
+        # _fake_work()
         print(f"[QUEUE {name}] done with {handled} of size {len(df)} in {end-start}s")
 
 
@@ -44,12 +44,12 @@ def profile_pipe(conn: Connection, name: str) -> None:
     profile = DatasetProfile()
 
     handled = 0
-    # while True:
-    #     start = perf_counter()
-    #     csv_bytes: bytes = conn.recv()
-    #     df = pd.read_csv(io.BytesIO(csv_bytes))
-    #     # profile.track(df)
-    #     end = perf_counter()
-    #     handled = handled + 1
-    #     _fake_work()
-    #     print(f"[PIPE {name}] done with {handled} of size {len(df)} in {end-start}s")
+    while True:
+        start = perf_counter()
+        csv_bytes: bytes = conn.recv()
+        df = pd.read_csv(io.BytesIO(csv_bytes))
+        profile.track(df)
+        end = perf_counter()
+        handled = handled + 1
+        # _fake_work()
+        print(f"[PIPE {name}] done with {handled} of size {len(df)} in {end-start}s")

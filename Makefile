@@ -7,6 +7,9 @@ server: ## Run the dev server
 	# uvicorn src.ai.whylabs.container.main:app --reload
 	cd src && python -m ai.whylabs.container.startup
 
+load-test-500:
+	hey -z 10s -n 1000 -c 4 -m POST -D data/data-500.csv 'http://localhost:8000/queue'
+
 benchmark:
 	hey -z 10s -n 1000 -c 4 -m POST -D data/short-data.csv -T 'application/json' 'http://localhost:8000/mp'
 
